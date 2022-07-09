@@ -10,6 +10,7 @@ import (
 // get all info for a department
 // dept name, number, top 20 jobs by priority/schedule date
 // stats: daily goal, jobs completed, parts completed
+// employee stats: jobs completed TODO::current logins
 func getQueue(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	dept := mux.Vars(r)["dept"]

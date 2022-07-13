@@ -274,3 +274,112 @@ func getEmployeeDailyStats(ref string) []EmployeeStats {
 	}
 	return dailyStatsList
 }
+
+func getWeeklyDepartmentStats(ref string) []WeeklyStats {
+	var weeklyStats WeeklyStats
+	var weeklyStatsList []WeeklyStats
+
+	ctx := context.Background()
+
+	err := db.PingContext(ctx)
+	if err != nil {
+		fmt.Println("Could not establish a connection: ", err.Error())
+	}
+
+	tsql := fmt.Sprintf(`
+		SELECT 
+			COUNT(OPREF) AS CompletedJobs,
+			CAST(OPCOMPDATE AS DATE) AS CompletionDate
+		FROM RnopTable
+		INNER JOIN RunsTable ON RUNREF = OPREF
+			AND RUNNO = OPRUN
+		WHERE RUNPKPURGED = 0
+			AND OPCOMPDATE >= CAST(GETDATE() AS DATETIME) - 8
+			AND OPCENTER LIKE '%s'
+		GROUP BY CAST(OPCOMPDATE AS DATE)
+		ORDER BY CompletionDate
+	`, ref)
+
+	rows, err := db.QueryContext(ctx, tsql)
+	if err != nil {
+		fmt.Println("Error executing query: ", err.Error())
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		err := rows.Scan(
+			&weeklyStats.CompletedJobs,
+			&weeklyStats.CompletionDate,
+		)
+		if err != nil {
+			fmt.Println("Error retrieving data: ", err.Error())
+		}
+
+		weeklyStatsList = append(weeklyStatsList, weeklyStats)
+	}
+	return weeklyStatsList
+}
+
+func getHotJobList() []Burndown {
+
+	current_month := "%JULY%"
+	prev_month := "%JUNE%"
+
+	var job Burndown
+	var jobList []Burndown
+
+	ctx := context.Background()
+
+	err := db.PingContext(ctx)
+	if err != nil {
+		fmt.Println("Could not establish a connection: ", err.Error())
+	}
+
+	tsql := fmt.Sprintf(`
+	SELECT DISTINCT
+		AGPART Part_Num, 
+		AGRUN Run, 
+		AGPMCOMMENTS Comments, 
+		OPCENTER, 
+		WCNDESC WC_Name, 
+		RUNQTY Qty, 
+		ISNULL((SELECT DATEDIFF(MINUTE,(Select TOP 1 OPCOMPDATE From RnopTable WHERE OPREF = RUNREF AND OPRUN = RUNNO AND OPCOMPLETE IS NOT NULL ORDER BY OPCOMPDATE DESC),GETDATE())), '') Queue_Diff
+
+	FROM AgcmTable
+		INNER JOIN RunsTable ON RUNRTNUM = AGPART and runno = AGRUN
+		INNER JOIN RnopTable ON RUNREF = OPREF and RUNNO = oprun and RUNOPCUR = OPNO
+		INNER JOIN RnalTable ON RUNREF = RAREF AND RARUN=RUNNO
+		INNER JOIN SohdTable ON SONUMBER=RASO 
+		INNER JOIN WcntTable ON OPCENTER = WCNREF
+	WHERE AGPMCOMMENTS LIKE '%s' OR AGPMCOMMENTS LIKE '%s' AND 
+		AGPO = SOPO AND AGITEM = RASOITEM AND
+		((RUNSTATUS <> 'CO' AND RUNSTATUS <> 'CL' AND runstatus <> 'CA') and runstatus is not null)
+	ORDER BY OPCENTER ASC
+	`, current_month, prev_month)
+
+	rows, err := db.QueryContext(ctx, tsql)
+	if err != nil {
+		fmt.Println("Error executing query: ", err.Error())
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		err := rows.Scan(
+			&job.Part_Num,
+			&job.Run,
+			&job.Comments,
+			&job.WC_Num,
+			&job.WC_Name,
+			&job.Quantity,
+			&job.Queue_Diff,
+		)
+		if err != nil {
+			fmt.Println("Error retrieving jobs: ", err.Error())
+		}
+		jobList = append(jobList, job)
+	}
+
+	return jobList
+}

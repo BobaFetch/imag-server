@@ -26,12 +26,28 @@ type QueueData struct {
 }
 
 type DepartmentStats struct {
-	Goal           int `json:"dailyGoal"`
-	CompletedJobs  int `json:"completedJobs"`
-	CompletedParts int `json:"completedParts"`
+	Goal           int           `json:"dailyGoal"`
+	CompletedJobs  int           `json:"completedJobs"`
+	CompletedParts int           `json:"completedParts"`
+	WeeklyStats    []WeeklyStats `json:"weeklyStats"`
 }
 
 type EmployeeStats struct {
 	Employee      string `json:"employee"`
 	CompletedJobs int    `json:"completedJobs"`
+}
+
+type WeeklyStats struct {
+	CompletedJobs  int    `json:"completedJobs"`
+	CompletionDate string `json:"completionDate"`
+}
+
+type Burndown struct {
+	Part_Num   string  `json:"partNumber"`
+	Run        string  `json:"run"`
+	Comments   string  `json:"comments"`
+	WC_Num     string  `json:"wcNumber"`
+	WC_Name    string  `json:"wcName"`
+	Quantity   float32 `json:"quantity"`
+	Queue_Diff int     `json:"queueDiff"`
 }

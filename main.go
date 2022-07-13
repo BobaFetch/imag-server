@@ -38,6 +38,7 @@ func main() {
 
 	// routes
 	r.HandleFunc("/api/v2/dept/{dept}", getQueue)
+	r.HandleFunc("/api/v2/burndown", getHotJobs)
 
 	// set up database
 	conn := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s",

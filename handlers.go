@@ -23,6 +23,15 @@ func getQueue(w http.ResponseWriter, r *http.Request) {
 	queue.Stats.CompletedJobs = getCompletedJobCount(dept)
 	queue.Stats.CompletedParts = getCompletedPartCount(dept)
 	queue.Employees = getEmployeeDailyStats(dept)
+	queue.Stats.WeeklyStats = getWeeklyDepartmentStats(dept)
 
 	json.NewEncoder(w).Encode(queue)
+}
+
+func getHotJobs(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var parts []Burndown = getHotJobList()
+
+	json.NewEncoder(w).Encode(parts)
 }
